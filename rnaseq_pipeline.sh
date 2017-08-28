@@ -8,11 +8,15 @@ THISPATH=$(pwd)
 ###################################################
 
 # Specify project name
-PROJ_PATH=$THISPATH/cyp_pfi
+PROJ_NAME=experiment_123
 
 # Specify user name and password
 USER=JohnDoe
 PW=secret
+# Specify URL for data download
+# must be a directory
+URL=ftp://ngs_service/NGS_RUN_ABC123
+
 
 # Specify reference genome and gtf
 GENOME_URL=ftp://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa.gz
@@ -25,15 +29,10 @@ STRAND=2
 # Specify path to folder containing gsea JAR file GMT files
 GSEA_UTILS=/path/to/gsea/utils/
 
-# Specify URL for data download
-# must be a directory
-URL=ftp://ngs_service/NGS_RUN_ABC123
-
-
 ###################################################
 # Don't modify the following text. it should just work.
 ###################################################
-
+PROJ_PATH=$THISPATH/$PROJ_NAME
 REF_DIR=$PROJ_PATH/refgenome
 FASTQ_DIR=$PROJ_PATH/fastq
 ALN_DIR=$PROJ_PATH/aln
@@ -55,7 +54,7 @@ ftp://melbourne-ftp.agrf.org.au/AGRF_CAGRF15810_CB6N8ANXX
 RAWDATA_DIR=$FASTQ_DIR/$(ls)
 echo $RAWDATA_DIR
 cd $RAWDATA_DIR
-#cat checksums.md5 | parallel --pipe -N1 md5sum -c | tee checksum_report.txt
+cat checksums.md5 | parallel --pipe -N1 md5sum -c | tee checksum_report.txt
 
 ###################################################
 # download and index reference genomes
@@ -99,12 +98,12 @@ FQZ=$1
 skewer -l 20 -q 20 -t $(nproc) $FQZ
 }
 export -f trim
-#parallel -j8 trim ::: *fastq.gz
+parallel -j8 trim ::: *fastq.gz
 
 ###################################################
 # Map reads to the genome with star
 ###################################################
-#STAR --genomeLoad LoadAndExit --genomeDir $REF_DIR
+STAR --genomeLoad LoadAndExit --genomeDir $REF_DIR
 runstar(){
 FQ=$1
 REF=$2
@@ -112,8 +111,8 @@ STAR --runThreadN $(nproc) --quantMode GeneCounts --genomeLoad LoadAndKeep \
 --outFileNamePrefix ${FQ}_ --outSAMtype None --genomeDir $REF --readFilesIn=$FQ
 }
 export -f runstar
-#parallel -j 3 runstar ::: *fastq ::: $REF_DIR
-#STAR --genomeLoad Remove --genomeDir $REF_DIR
+parallel -j 3 runstar ::: *fastq ::: $REF_DIR
+STAR --genomeLoad Remove --genomeDir $REF_DIR
 
 
 ###################################################
@@ -124,7 +123,7 @@ export -f runstar
 CUT_COL=$((STRAND+2))
 for CNT in *ReadsPerGene.out.tab ; do
   NAME=$(echo $CNT | cut -d '_' -f-2)
-  tail -n+5 $CNT | cut -f1,$CUT_COL | sed "s/^/${NAME}\t/" >> 3col.txt
+  tail -n+5 $CNT | cut -f1,$CUT_COL | sed "s/^/${NAME}\t/" | sed "s#@@GNAMES@@#$REF_DIR/$GNAMES" >> 3col.txt
 done
 
 cp 3col.txt $REF_DIR/$GNAMES $EDGER_DIR
@@ -142,7 +141,7 @@ tmp<-read.table("3col.txt",header=F)
 
 x<-as.matrix(acast(tmp, V2~V1, value.var="V3"))
 #dont forget gene names
-g<-read.table("Homo_sapiens.GRCh38.90.gnames.txt",row.names=1)
+g<-read.table("@@GNAMES@@",row.names=1)
 x<-merge(g,x,by=0)
 rownames(x)=paste(x$Row.names,x$V2,sep="_")
 x$Row.names=NULL
@@ -241,7 +240,6 @@ dev.off()
 
 }
 
-#mapply(dge_cycle,as.vector(a$Var1),as.vector(a$Var2))
 mcmapply(dge_cycle,as.vector(a$Var1),as.vector(a$Var2),mc.cores=32)
 EOF
 Rscript edgeR_script.R
