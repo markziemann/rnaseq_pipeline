@@ -212,7 +212,7 @@ dgelist<-rbind(dgelist,as.data.frame(subset(dge,FDR<0.05,select=c("Row.names")))
 head(dge)
 
 ##output rank file
-rnk<-as.data.frame(sign(dge$logFC)/log10(dge$PValue+1E-300))
+rnk<-as.data.frame(-log10(dge$PValue+1E-300)/sign(dge$logFC))
 colnames(rnk)="Score"
 rownames(rnk)=dge$Row.names
 write.table(rnk,file=paste(PFX,".rnk",sep=""),sep="\t",quote=F,row.names=T)
