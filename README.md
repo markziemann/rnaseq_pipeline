@@ -4,7 +4,8 @@ Mark Ziemann 2017
 
 mark.ziemann@gmail.com
 
-This script is an attempt to authomate some of the steps we routinely use in RNA-seq analysis including:
+This script (rnaseq_allinone.sh) is an attempt to automate some of the steps we routinely use in RNA-seq analysis 
+including:
 - Download fastq.gz files from service provider
 - Perform quality trimming
 - Download and index the genome for analysis with STAR mapper
@@ -31,5 +32,5 @@ Other things to remember before kicking it off
    - Text after the second underscore doesn't matter
    - Follow this schema: TreatmentGroup_replicate1_ANYTHING_XX43437841
 
-
+Additionally, I have included a folder of scripts to do the analysis (paired end mouse).
 
