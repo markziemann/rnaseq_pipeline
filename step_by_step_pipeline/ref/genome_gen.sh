@@ -1,4 +1,5 @@
 #!/bin/bash
+#need to have the ensembl GTF and FA file in current dir
 GTF=$(find . | grep gtf$)
 FA=$(find . | egrep '(fa$|.fna$)')
 CWD=$(pwd)
